@@ -30,10 +30,12 @@
   .take { margin: 8px 0 0; max-width: 65ch; }
   .take b { font-variant-numeric: tabular-nums; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; min-width: 0; }
-  .tiles { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); }
+  .tiles { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 440px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
   .tile { display: flex; flex-direction: column; gap: 4px; }
   .label { font-size: .85rem; color: var(--muted); }
-  .big { font-family: var(--serif); font-size: 1.75rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .big { font-family: var(--serif); font-size: clamp(1.35rem, 3.2vw, 1.75rem); overflow-wrap: anywhere; line-height: 1.15; font-variant-numeric: tabular-nums; }
   .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px; }
   .grid2 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
   .card > .note, .card > .take { margin-top: 6px; }
