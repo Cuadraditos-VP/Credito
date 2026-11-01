@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crédito departamento</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#2c6a8a">
+<style>
+  /* Una columna de tarjetas; números grandes en serif, todo lo demás en la letra del sistema. */
+  :root {
+    --bg: #f3f5f7; --panel: #ffffff; --fg: #18212c; --muted: #5b6676; --line: #dbe1e8;
+    --accent: #2c6a8a; --accent2: #b8692a; --ok: #2e7d4f; --bad: #b4372f;
+    --sans: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    --serif: Georgia, "Times New Roman", serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #11161c; --panel: #19212a; --fg: #e6ebf0; --muted: #98a4b3; --line: #2b3541;
+      --accent: #6fb3d6; --accent2: #e3a066; --ok: #6cc48f; --bad: #ef7a70; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--sans); }
+  .wrap { max-width: 72rem; margin: 0 auto; padding: 28px 16px 48px; display: grid; gap: 20px; }
+  h1 { font-family: var(--serif); font-weight: 400; font-size: 2rem; margin: 0; }
+  h2 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+  .sub, .note { color: var(--muted); font-size: .85rem; margin: 0; }
+  .take { margin: 8px 0 0; max-width: 65ch; }
+  .take b { font-variant-numeric: tabular-nums; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; min-width: 0; }
+  .tiles { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); }
+  .tile { display: flex; flex-direction: column; gap: 4px; }
+  .label { font-size: .85rem; color: var(--muted); }
+  .big { font-family: var(--serif); font-size: 1.75rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .grid2 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+  .card > .note, .card > .take { margin-top: 6px; }
+  .chart { position: relative; margin-top: 14px; min-height: 320px; }
+  .chart.bars { min-height: 260px; }
+  .chart svg { display: block; width: 100%; overflow: visible; }
+  .chart text { fill: var(--muted); font: 12px var(--sans); }
+  .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .toggle button { font: inherit; font-size: .82rem; border: 0; background: transparent; color: var(--muted); padding: 4px 10px; cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--bg); color: var(--fg); font-weight: 600; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.15); padding: 4px 8px; font-size: .8rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tip .d { color: var(--muted); }
+  input { font: inherit; font-size: .9rem; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+  .buscar { width: min(100%, 18rem); }
+  .tbox { max-height: 30rem; overflow: auto; margin-top: 12px; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th { position: sticky; top: 0; background: var(--panel); border-bottom: 1px solid var(--line); padding: 0; text-align: right; }
+  td { padding: 5px 10px; text-align: right; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; }
+  th button { font: inherit; font-size: .82rem; color: var(--muted); background: none; border: 0; padding: 6px 10px; width: 100%; text-align: inherit; cursor: pointer; }
+  th[aria-sort] button { color: var(--fg); font-weight: 600; }
+  th[aria-sort="ascending"] button::after { content: " ↑"; }
+  th[aria-sort="descending"] button::after { content: " ↓"; }
+  td.muted { color: var(--muted); } td.baja { color: var(--ok); }
+  td.extra::after { content: " •"; color: var(--accent2); }
+  form { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-top: 12px; }
+  form label { display: flex; flex-direction: column; gap: 3px; font-size: .82rem; color: var(--muted); }
+  form input { width: 10rem; }
+  .btn { font: inherit; font-size: .9rem; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--panel); cursor: pointer; }
+  .btn.sec { background: transparent; color: var(--accent); }
+  .msg { font-size: .85rem; min-height: 1.3em; margin: 6px 0 0; }
+  .msg.err { color: var(--bad); } .msg.okm { color: var(--ok); }
+  ul.extras { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 4px; font-size: .88rem; font-variant-numeric: tabular-nums; }
+  ul.extras button { font: inherit; font-size: .8rem; background: none; border: 0; color: var(--bad); cursor: pointer; text-decoration: underline; }
+  footer { color: var(--muted); font-size: .8rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Crédito departamento</h1>
+    <p class="sub">Préstamo hipotecario <span id="numero"></span> · historial de cuotas pagadas</p>
+    <p class="take" id="resumen-txt"></p>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <section class="card">
+    <div class="head">
+      <h2>Cómo fue subiendo la cuota</h2>
+      <div class="toggle" role="group" aria-label="Escala">
+        <button type="button" data-escala="lineal" aria-pressed="true">Normal</button>
+        <button type="button" data-escala="log" aria-pressed="false">Proporcional</button>
+      </div>
+    </div>
+    <p class="note">Cada punto es una cuota pagada. La escala proporcional deja ver mejor los primeros años, cuando la cuota era mucho más chica.</p>
+    <div class="chart" id="ch-evolucion"></div>
+  </section>
+
+  <section class="card">
+    <h2>Tu cuota ajustada por inflación</h2>
+    <p class="note" id="real-nota"></p>
+    <p class="take" id="real-txt"></p>
+    <div class="chart" id="ch-real"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <div class="head">
+        <h2>Total pagado por año</h2>
+        <div class="toggle" role="group" aria-label="Pesos">
+          <button type="button" data-modo="hoy" aria-pressed="true">Pesos de hoy</button>
+          <button type="button" data-modo="nominal" aria-pressed="false">Pesos de cada año</button>
+        </div>
+      </div>
+      <p class="note">Suma de las cuotas pagadas en cada año. El primer y el último año no están completos.</p>
+      <div class="chart bars" id="ch-anual"></div>
+    </section>
+    <section class="card">
+      <h2>Cuotas suspendidas</h2>
+      <p class="take">Durante la pandemia se suspendieron las cuotas <b id="susp"></b>. Pasaron al final del crédito, por eso no aparecen en el historial.</p>
+      <p class="note">En 2020 y principios de 2021 también se ven cuotas mucho más bajas de lo normal (de la 35 a la 50). La cuota 90, de enero de 2024, fue un pago chico hecho diez días antes de la 91.</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="head">
+      <h2>Todas las cuotas</h2>
+      <input type="search" id="buscar" class="buscar" placeholder="Buscar cuota, fecha o importe" aria-label="Buscar cuota, fecha o importe">
+    </div>
+    <p class="note">Tocá un título de columna para ordenar. La variación compara cada cuota con la anterior pagada. Las marcadas con • las cargaste vos.</p>
+    <div class="tbox">
+      <table>
+        <thead><tr>
+          <th aria-sort="descending"><button type="button" data-col="cuota">Cuota</button></th>
+          <th><button type="button" data-col="fecha">Fecha de pago</button></th>
+          <th><button type="button" data-col="importe">Importe</button></th>
+          <th><button type="button" data-col="variacion">Variación</button></th>
+          <th><button type="button" data-col="hoy">En pesos de hoy</button></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Cargar datos nuevos</h2>
+    <p class="note">Lo que cargues queda guardado en esta computadora, en este navegador. Si borrás los datos del navegador, se pierde (lo de fábrica no).</p>
+    <form id="f-cuota">
+      <label>Cuota N° <input id="c-num" type="number" min="1" required></label>
+      <label>Fecha de pago <input id="c-fecha" type="date" required></label>
+      <label>Importe ($) <input id="c-imp" type="text" inputmode="decimal" placeholder="1.025.300,50" required></label>
+      <label>Próximo vencimiento <input id="c-prox" type="date"></label>
+      <button class="btn" type="submit">Agregar cuota</button>
+    </form>
+    <form id="f-ipc">
+      <label>Mes de inflación <input id="i-mes" type="month" required></label>
+      <label>Inflación del mes (%) <input id="i-pct" type="text" inputmode="decimal" placeholder="2,1" required></label>
+      <button class="btn sec" type="submit">Agregar inflación</button>
+    </form>
+    <p class="msg" id="msg" role="status"></p>
+    <ul class="extras" id="extras"></ul>
+  </section>
+
+  <footer>Inflación: IPC nacional del INDEC, variación mensual redondeada a un decimal, desde enero 2017. Último mes cargado: <span id="ult-ipc"></span>. Cuotas copiadas del home banking el 01/11/2026.</footer>
+</div>
+
+<script>
+const BASE_PAGOS = [[1,"2017-07-18",549.91],[2,"2017-08-24",9163.09],[3,"2017-09-21",9329.27],[4,"2017-10-19",9486.6],[5,"2017-11-23",9648.57],[6,"2017-12-21",9787.4],[7,"2018-01-25",10014.16],[8,"2018-02-22",10162.24],[9,"2018-03-22",10463.03],[10,"2018-04-19",10703.67],[11,"2018-05-24",10990.58],[12,"2018-06-22",11249.73],[13,"2018-07-20",12109.29],[14,"2018-08-23",11971.63],[15,"2018-09-20",12369.62],[16,"2018-10-25",13031.36],[17,"2018-11-22",13794.92],[18,"2018-12-21",14373.37],[19,"2019-01-25",14822.25],[20,"2019-02-21",15206.34],[21,"2019-03-21",15720.01],[22,"2019-04-29",16391.0],[23,"2019-05-23",17071.26],[24,"2019-06-24",17598.81],[25,"2019-07-26",18671.24],[26,"2019-08-23",18584.5],[27,"2019-09-20",19093.54],[28,"2019-10-25",20097.74],[29,"2019-11-22",21018.61],[30,"2019-12-19",21823.84],[31,"2020-01-24",22698.45],[32,"2020-02-26",23364.83],[33,"2020-03-18",23887.73],[34,"2020-04-24",24503.21],[35,"2020-06-03",4640.75],[36,"2020-07-16",5020.19],[37,"2020-07-31",6027.86],[38,"2020-08-31",5996.62],[39,"2020-09-30",6621.37],[40,"2020-11-02",7380.27],[41,"2020-11-30",8203.99],[42,"2021-01-04",9305.37],[43,"2021-02-01",10332.69],[44,"2021-03-01",9758.66],[50,"2021-03-31",9184.62],[57,"2021-04-30",34646.92],[58,"2021-06-03",36935.82],[59,"2021-06-25",38362.48],[60,"2021-07-27",40165.45],[61,"2021-08-26",40863.85],[62,"2021-09-24",41970.31],[63,"2021-10-28",43194.97],[64,"2021-11-25",44731.77],[65,"2021-12-28",46107.77],[66,"2022-01-26",47431.72],[67,"2022-02-24",49138.8],[68,"2022-03-28",51493.59],[69,"2022-04-28",54349.61],[70,"2022-05-27",57872.36],[71,"2022-06-28",61035.68],[72,"2022-07-26",64687.58],[73,"2022-08-25",68322.36],[74,"2022-09-26",73159.64],[75,"2022-10-28",77784.06],[76,"2022-11-25",82881.4],[77,"2023-01-02",87628.8],[78,"2023-01-25",92007.47],[79,"2023-02-28",96787.95],[80,"2023-03-27",103209.29],[81,"2023-04-28",110155.57],[82,"2023-05-29",119456.64],[83,"2023-06-28",128975.03],[84,"2023-07-26",138097.84],[85,"2023-08-25",146569.81],[86,"2023-09-26",159748.13],[87,"2023-10-27",180146.98],[88,"2023-11-28",198881.47],[89,"2023-12-28",219119.27],[90,"2024-01-15",24233.26],[91,"2024-01-25",255811.06],[92,"2024-02-28",312687.57],[93,"2024-03-26",363776.36],[94,"2024-04-26",412084.14],[95,"2024-05-27",453820.4],[96,"2024-07-01",482539.33],[97,"2024-07-25",505320.0],[98,"2024-08-26",526538.43],[99,"2024-09-25",546220.0],[100,"2024-10-25",569269.94],[101,"2024-11-28",586715.88],[102,"2024-12-27",601982.23],[103,"2025-01-27",617304.79],[104,"2025-02-26",631714.98],[105,"2025-03-31",646014.03],[106,"2025-04-29",666172.26],[107,"2025-05-28",688342.6],[108,"2025-06-27",702392.07],[109,"2025-07-25",714691.69],[110,"2025-08-27",726182.78],[111,"2025-09-24",740185.99],[112,"2025-10-27",755211.55],[113,"2025-12-01",770917.81],[114,"2025-12-29",790298.82],[115,"2026-01-27",811205.58],[116,"2026-02-27",832992.83],[117,"2026-03-27",858504.71],[118,"2026-04-28",884965.52],[119,"2026-05-28",911394.22],[120,"2026-06-25",933319.43],[121,"2026-07-28",952888.17],[122,"2026-08-27",970071.52],[123,"2026-09-24",989604.58],[124,"2026-10-27",1007675.32]];
+const BASE_IPC = [["2017-01",1.6],["2017-02",2.1],["2017-03",2.4],["2017-04",2.6],["2017-05",1.4],["2017-06",1.2],["2017-07",1.7],["2017-08",1.4],["2017-09",1.9],["2017-10",1.5],["2017-11",1.4],["2017-12",3.1],["2018-01",1.8],["2018-02",2.4],["2018-03",2.3],["2018-04",2.7],["2018-05",2.1],["2018-06",3.7],["2018-07",3.1],["2018-08",3.9],["2018-09",6.5],["2018-10",5.4],["2018-11",3.2],["2018-12",2.6],["2019-01",2.9],["2019-02",3.8],["2019-03",4.7],["2019-04",3.4],["2019-05",3.1],["2019-06",2.7],["2019-07",2.2],["2019-08",4.0],["2019-09",5.9],["2019-10",3.3],["2019-11",4.3],["2019-12",3.7],["2020-01",2.3],["2020-02",2.0],["2020-03",3.3],["2020-04",1.5],["2020-05",1.5],["2020-06",2.2],["2020-07",1.9],["2020-08",2.7],["2020-09",2.8],["2020-10",3.8],["2020-11",3.2],["2020-12",4.0],["2021-01",4.0],["2021-02",3.6],["2021-03",4.8],["2021-04",4.1],["2021-05",3.3],["2021-06",3.2],["2021-07",3.0],["2021-08",2.5],["2021-09",3.5],["2021-10",3.5],["2021-11",2.5],["2021-12",3.8],["2022-01",3.9],["2022-02",4.7],["2022-03",6.7],["2022-04",6.0],["2022-05",5.1],["2022-06",5.3],["2022-07",7.4],["2022-08",7.0],["2022-09",6.2],["2022-10",6.3],["2022-11",4.9],["2022-12",5.1],["2023-01",6.0],["2023-02",6.6],["2023-03",7.7],["2023-04",8.4],["2023-05",7.8],["2023-06",6.0],["2023-07",6.3],["2023-08",12.4],["2023-09",12.7],["2023-10",8.3],["2023-11",12.8],["2023-12",25.5],["2024-01",20.6],["2024-02",13.2],["2024-03",11.0],["2024-04",8.8],["2024-05",4.2],["2024-06",4.6],["2024-07",4.0],["2024-08",4.2],["2024-09",3.5],["2024-10",2.7],["2024-11",2.4],["2024-12",2.7],["2025-01",2.2],["2025-02",2.4],["2025-03",3.7],["2025-04",2.8],["2025-05",1.5],["2025-06",1.6],["2025-07",1.9],["2025-08",1.9],["2025-09",2.1],["2025-10",2.3],["2025-11",2.5],["2025-12",2.8],["2026-01",2.9],["2026-02",2.9],["2026-03",3.4],["2026-04",2.6],["2026-05",2.1],["2026-06",1.9],["2026-07",2.1],["2026-08",1.7],["2026-09",1.9]];
+const PRESTAMO = { numero: '5174-561720/0', proximo: '2026-11-30' };
+
+const ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+const ars0 = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+const pct = new Intl.NumberFormat('es-AR', { style: 'percent', maximumFractionDigits: 1, signDisplay: 'exceptZero' });
+const compacto = new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 });
+const fecha = (s) => s.split('-').reverse().join('/');
+const mesLargo = (m) => new Date(m + '-01T00:00:00Z').toLocaleDateString('es-AR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const toDate = (s) => new Date(s + 'T00:00:00Z');
+
+const KEY = 'creditoDepto.v1';
+function leerExtras() {
+  try { const x = JSON.parse(localStorage.getItem(KEY)); if (x && x.cuotas && x.ipc) return x; } catch (e) {}
+  return { cuotas: [], ipc: [], proximo: null };
+}
+function guardarExtras(x) { try { localStorage.setItem(KEY, JSON.stringify(x)); return true; } catch (e) { return false; } }
+let extras = leerExtras();
+
+function calcular() {
+  const mp = new Map(BASE_PAGOS.map(([c, f, i]) => [c, { cuota: c, fecha: f, importe: i, extra: false }]));
+  extras.cuotas.forEach(([c, f, i]) => mp.set(c, { cuota: c, fecha: f, importe: i, extra: true }));
+  const pagos = [...mp.values()].sort((a, b) => a.cuota - b.cuota);
+
+  const mi = new Map(BASE_IPC);
+  extras.ipc.forEach(([m, v]) => mi.set(m, v));
+  const meses = [...mi.keys()].sort();
+  const idx = {}; let v = 100;
+  meses.forEach((m) => { v *= 1 + mi.get(m) / 100; idx[m] = v; });
+  const base = meses[meses.length - 1];
+
+  pagos.forEach((p, i) => {
+    const m = p.fecha.slice(0, 7);
+    p.hoy = p.importe * (idx[m] ? idx[base] / idx[m] : 1);
+    p.variacion = i ? p.importe / pagos[i - 1].importe - 1 : null;
+  });
+
+  const u = pagos[pagos.length - 1], a = pagos[pagos.length - 2];
+  const h = pagos.find((p) => p.cuota === u.cuota - 12);
+  const [by, bm] = base.split('-').map(Number);
+  const hace12 = `${by - 1}-${String(bm).padStart(2, '0')}`;
+  const susp = [];
+  for (let i = 1; i < pagos.length; i++) if (pagos[i].cuota - pagos[i - 1].cuota > 1) susp.push([pagos[i - 1].cuota + 1, pagos[i].cuota - 1]);
+
+  const anual = {};
+  pagos.forEach((p) => {
+    const y = p.fecha.slice(0, 4);
+    anual[y] = anual[y] || { anio: y, total: 0, hoy: 0, cuotas: 0 };
+    anual[y].total += p.importe; anual[y].hoy += p.hoy; anual[y].cuotas++;
+  });
+
+  return {
+    pagos, base, u, a, h, susp,
+    anual: Object.values(anual).sort((x, y) => x.anio.localeCompare(y.anio)),
+    total: pagos.reduce((s, p) => s + p.importe, 0),
+    totalHoy: pagos.reduce((s, p) => s + p.hoy, 0),
+    ipc12: idx[hace12] ? idx[base] / idx[hace12] - 1 : null,
+    proximo: extras.proximo || PRESTAMO.proximo,
+  };
+}
+
+let D = calcular();
+let escala = 'lineal', modo = 'hoy', orden = { col: 'cuota', dir: 'desc' }, busca = '';
+
+function texto() {
+  const { u, a, h } = D;
+  document.getElementById('numero').textContent = PRESTAMO.numero;
+  const r = document.getElementById('resumen-txt');
+  r.replaceChildren();
+  const b = (t) => { const e = document.createElement('b'); e.textContent = t; return e; };
+  r.append('Pagaste ', b(String(D.pagos.length)), ' cuotas, que ajustadas por inflación suman ', b(ars0.format(D.totalHoy)),
+    ' en pesos de hoy. La última, de ', b(ars.format(u.importe)), '');
+  if (h) r.append(', subió un ', b(pct.format(u.importe / h.importe - 1)), ' en un año');
+  if (D.ipc12 != null) r.append(', contra una inflación de ', b(pct.format(D.ipc12)), ' en los últimos 12 meses');
+  r.append('.');
+
+  const tiles = [
+    ['Última cuota pagada', ars.format(u.importe), `Cuota ${u.cuota}, pagada el ${fecha(u.fecha)}`],
+    ['Próximo vencimiento', fecha(D.proximo), `Cuota ${u.cuota + 1}`],
+    ['Aumento contra el mes anterior', pct.format(u.importe / a.importe - 1), `Cuota ${a.cuota}: ${ars.format(a.importe)}`],
+    ['Aumento en un año', h ? pct.format(u.importe / h.importe - 1) : '—',
+      (h ? `Cuota ${h.cuota} (${mesLargo(h.fecha.slice(0, 7))}): ${ars.format(h.importe)}. ` : '') + (D.ipc12 != null ? `Inflación de los últimos 12 meses: ${pct.format(D.ipc12)}` : '')],
+    ['Cuotas pagadas', String(D.pagos.length), `Hasta la ${u.cuota}; ${u.cuota - D.pagos.length} se suspendieron en la pandemia`],
+    ['Total pagado, en pesos de hoy', ars0.format(D.totalHoy), `Sin ajustar por inflación: ${ars0.format(D.total)}`],
+  ];
+  const t = document.getElementById('tiles');
+  t.replaceChildren(...tiles.map(([l, v, n]) => {
+    const d = document.createElement('div'); d.className = 'card tile';
+    const s1 = document.createElement('span'); s1.className = 'label'; s1.textContent = l;
+    const s2 = document.createElement('span'); s2.className = 'big'; s2.textContent = v;
+    const p = document.createElement('p'); p.className = 'note'; p.textContent = n;
+    d.append(s1, s2, p); return d;
+  }));
+
+  document.getElementById('real-nota').textContent = `Cada cuota llevada a pesos de ${mesLargo(D.base)} con la inflación del INDEC (último mes cargado).`;
+  const c2 = D.pagos.find((p) => p.cuota === 2);
+  document.getElementById('real-txt').textContent = c2
+    ? `En plata de hoy, la cuota casi no cambió: la cuota 2 equivale a ${ars0.format(c2.hoy)} y la última a ${ars0.format(u.hoy)}. Las bajas son el congelamiento de la pandemia (2020–2021) y el salto de inflación de fines de 2023, cuando la cuota tardó unos meses en alcanzarla.`
+    : '';
+  const sp = D.susp.map(([x, y]) => (x === y ? String(x) : `${x} a ${y}`));
+  document.getElementById('susp').textContent = sp.length > 1 ? sp.slice(0, -1).join(', ') + ' y ' + sp[sp.length - 1] : (sp[0] || '—');
+  document.getElementById('ult-ipc').textContent = mesLargo(D.base);
+}
+
+/* ---- gráficos en SVG ---- */
+const NS = 'http://www.w3.org/2000/svg';
+function S(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.append(e);
+  return e;
+}
+function ticksLineales(max, n) {
+  const paso0 = max / n, mag = Math.pow(10, Math.floor(Math.log10(paso0)));
+  const paso = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((p) => p >= paso0);
+  const top = Math.ceil(max / paso) * paso, out = [];
+  for (let t = 0; t <= top + 1e-9; t += paso) out.push(t);
+  return out;
+}
+const etq = (t) => '$ ' + compacto.format(t);
+function medir(svg, textos) {
+  let w = 0;
+  textos.forEach((t) => { const e = S('text', {}, svg); e.textContent = t; w = Math.max(w, e.getComputedTextLength()); e.remove(); });
+  return w;
+}
+function tooltip(box) { const t = document.createElement('div'); t.className = 'tip'; t.hidden = true; box.append(t); return t; }
+function ponerTip(tip, W, x, y, l1, l2) {
+  tip.replaceChildren();
+  const a = document.createElement('div'); a.className = 'd'; a.textContent = l1;
+  const b = document.createElement('div'); b.textContent = l2;
+  tip.append(a, b); tip.hidden = false;
+  let left = x + 12; if (left + tip.offsetWidth > W) left = x - tip.offsetWidth - 12;
+  tip.style.left = Math.max(0, left) + 'px';
+  tip.style.top = Math.max(0, y - tip.offsetHeight - 8) + 'px';
+}
+
+function linea(box, campo, log, colorVar) {
+  box.replaceChildren();
+  const pts = D.pagos.map((p) => ({ p, x: toDate(p.fecha), y: p[campo] }));
+  const W = Math.max(280, box.clientWidth), H = 320, mt = 28, mb = 28, mr = 12;
+  const color = getComputedStyle(document.documentElement).getPropertyValue(colorVar).trim();
+  const ys = pts.map((d) => d.y), maxV = Math.max(...ys), minV = Math.min(...ys);
+  let ticks, ymin, ymax;
+  if (log) {
+    ymin = Math.pow(10, Math.floor(Math.log10(minV))); ymax = maxV * 1.1; ticks = [];
+    for (let t = ymin; t <= ymax; t *= 10) ticks.push(t);
+  } else { ticks = ticksLineales(maxV, 5); ymin = 0; ymax = ticks[ticks.length - 1]; }
+  const svg = S('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img' }, box);
+  const ml = medir(svg, ticks.map(etq)) + 10;
+  const fy = log ? (v) => Math.log10(v) : (v) => v;
+  const Y = (v) => H - mb - (fy(v) - fy(ymin)) / (fy(ymax) - fy(ymin)) * (H - mb - mt);
+  const x0 = pts[0].x.getTime(), x1 = pts[pts.length - 1].x.getTime();
+  const X = (d) => ml + (d.getTime() - x0) / (x1 - x0) * (W - mr - ml);
+
+  ticks.forEach((t) => {
+    S('line', { x1: ml, x2: W - mr, y1: Y(t), y2: Y(t), stroke: 'var(--line)' }, svg);
+    const e = S('text', { x: ml - 8, y: Y(t), dy: '0.32em', 'text-anchor': 'end' }, svg); e.textContent = etq(t);
+  });
+  S('line', { x1: ml, x2: W - mr, y1: H - mb, y2: H - mb, stroke: 'var(--muted)', 'stroke-opacity': .5 }, svg);
+  const y0 = pts[0].x.getUTCFullYear(), y1 = pts[pts.length - 1].x.getUTCFullYear(), salto = W < 560 ? 2 : 1;
+  for (let y = y0 + 1; y <= y1; y += salto) {
+    const xx = X(new Date(Date.UTC(y, 0, 1)));
+    S('line', { x1: xx, x2: xx, y1: H - mb, y2: H - mb + 5, stroke: 'var(--muted)', 'stroke-opacity': .5 }, svg);
+    const e = S('text', { x: xx, y: H - 8, 'text-anchor': 'middle' }, svg); e.textContent = y;
+  }
+  const gid = 'g' + Math.random().toString(36).slice(2, 8);
+  const lg = S('linearGradient', { id: gid, x1: 0, x2: 0, y1: 0, y2: 1 }, S('defs', {}, svg));
+  [[0, .26], [.25, .16], [.5, .08], [.75, .03], [1, 0]].forEach(([o, a]) => S('stop', { offset: o, 'stop-color': color, 'stop-opacity': a }, lg));
+  const dl = pts.map((d, i) => (i ? 'L' : 'M') + X(d.x).toFixed(1) + ',' + Y(d.y).toFixed(1)).join('');
+  S('path', { d: dl + `L${X(pts[pts.length - 1].x)},${Y(ymin)}L${X(pts[0].x)},${Y(ymin)}Z`, fill: `url(#${gid})` }, svg);
+  S('path', { d: dl, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+  const u = pts[pts.length - 1];
+  S('circle', { cx: X(u.x), cy: Y(u.y), r: 4, fill: color }, svg);
+  const lab = S('text', { x: X(u.x) - 8, y: Y(u.y) - 10, 'text-anchor': 'end', style: 'fill:var(--fg)' }, svg); lab.textContent = ars0.format(u.y);
+
+  const foco = S('circle', { r: 4.5, fill: color, stroke: 'var(--panel)', 'stroke-width': 2, visibility: 'hidden' }, svg);
+  const tip = tooltip(box);
+  const capa = S('rect', { x: ml, y: mt, width: W - mr - ml, height: H - mb - mt, fill: 'transparent' }, svg);
+  capa.addEventListener('pointermove', (ev) => {
+    const r = svg.getBoundingClientRect(), mx = (ev.clientX - r.left) * W / r.width;
+    let best = pts[0]; pts.forEach((d) => { if (Math.abs(X(d.x) - mx) < Math.abs(X(best.x) - mx)) best = d; });
+    foco.setAttribute('cx', X(best.x)); foco.setAttribute('cy', Y(best.y)); foco.setAttribute('visibility', 'visible');
+    ponerTip(tip, W, X(best.x), Y(best.y), `Cuota ${best.p.cuota} · ${fecha(best.p.fecha)}`, (campo === 'hoy' ? ars0 : ars).format(best.y));
+  });
+  capa.addEventListener('pointerleave', () => { foco.setAttribute('visibility', 'hidden'); tip.hidden = true; });
+}
+
+function barras(box) {
+  box.replaceChildren();
+  const campo = modo === 'nominal' ? 'total' : 'hoy';
+  const datos = D.anual;
+  const color = getComputedStyle(document.documentElement).getPropertyValue(campo === 'total' ? '--accent' : '--accent2').trim();
+  const W = Math.max(260, box.clientWidth), H = 260, mt = 22, mb = 26, mr = 4;
+  const max = Math.max(...datos.map((d) => d[campo]));
+  const ticks = ticksLineales(max, 4), top = ticks[ticks.length - 1];
+  const svg = S('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img' }, box);
+  const ml = medir(svg, ticks.map(etq)) + 10;
+  const Y = (v) => H - mb - v / top * (H - mb - mt);
+  const paso = (W - mr - ml) / datos.length, bw = Math.min(32, paso * 0.7);
+  ticks.forEach((t) => {
+    S('line', { x1: ml, x2: W - mr, y1: Y(t), y2: Y(t), stroke: 'var(--line)' }, svg);
+    const e = S('text', { x: ml - 8, y: Y(t), dy: '0.32em', 'text-anchor': 'end' }, svg); e.textContent = etq(t);
+  });
+  const cada = paso < 30 ? 2 : 1;
+  datos.forEach((d, i) => {
+    const cx = ml + paso * i + paso / 2;
+    S('rect', { x: cx - bw / 2, y: Y(d[campo]), width: bw, height: Y(0) - Y(d[campo]), rx: 3, fill: color }, svg);
+    if (paso >= 44) { const e = S('text', { x: cx, y: Y(d[campo]) - 6, 'text-anchor': 'middle', style: 'fill:var(--fg)' }, svg); e.textContent = compacto.format(d[campo]); }
+    if (i % cada === 0) { const e = S('text', { x: cx, y: H - 8, 'text-anchor': 'middle' }, svg); e.textContent = d.anio; }
+  });
+  const tip = tooltip(box);
+  const capa = S('rect', { x: ml, y: mt, width: W - mr - ml, height: H - mb - mt, fill: 'transparent' }, svg);
+  capa.addEventListener('pointermove', (ev) => {
+    const r = svg.getBoundingClientRect(), mx = (ev.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(datos.length - 1, Math.floor((mx - ml) / paso))), d = datos[i];
+    ponerTip(tip, W, ml + paso * i + paso / 2, Y(d[campo]), `${d.anio} · ${d.cuotas} cuotas`, ars0.format(d[campo]));
+  });
+  capa.addEventListener('pointerleave', () => { tip.hidden = true; });
+}
+
+function tabla() {
+  let filas = D.pagos.slice();
+  if (busca) filas = filas.filter((p) => `${p.cuota} ${fecha(p.fecha)} ${ars.format(p.importe)} ${p.importe}`.toLowerCase().includes(busca));
+  const val = (p) => (orden.col === 'fecha' ? p.fecha : p[orden.col] == null ? -Infinity : p[orden.col]);
+  filas.sort((a, b) => { const A = val(a), B = val(b), c = A < B ? -1 : A > B ? 1 : 0; return orden.dir === 'asc' ? c : -c; });
+  const trs = filas.map((p) => {
+    const tr = document.createElement('tr');
+    const td = (t, c) => { const e = document.createElement('td'); e.textContent = t; if (c) e.className = c; tr.append(e); };
+    td(String(p.cuota), p.extra ? 'extra' : '');
+    td(fecha(p.fecha));
+    td(ars.format(p.importe));
+    td(p.variacion == null ? '—' : pct.format(p.variacion), p.variacion == null ? 'muted' : p.variacion < 0 ? 'baja' : '');
+    td(ars0.format(p.hoy));
+    return tr;
+  });
+  if (!trs.length) { const tr = document.createElement('tr'), c = document.createElement('td'); c.colSpan = 5; c.className = 'muted'; c.textContent = 'Ninguna cuota coincide con la búsqueda.'; tr.append(c); trs.push(tr); }
+  document.getElementById('tbody').replaceChildren(...trs);
+}
+
+function listaExtras() {
+  const ul = document.getElementById('extras');
+  const items = [];
+  extras.cuotas.slice().sort((a, b) => a[0] - b[0]).forEach(([c, f, i]) => items.push([`Cuota ${c} · ${fecha(f)} · ${ars.format(i)}`, () => { extras.cuotas = extras.cuotas.filter((x) => x[0] !== c); }]));
+  extras.ipc.slice().sort().forEach(([m, v]) => items.push([`Inflación de ${mesLargo(m)}: ${String(v).replace('.', ',')} %`, () => { extras.ipc = extras.ipc.filter((x) => x[0] !== m); }]));
+  if (extras.proximo) items.push([`Próximo vencimiento: ${fecha(extras.proximo)}`, () => { extras.proximo = null; }]);
+  ul.replaceChildren(...items.map(([t, borrar]) => {
+    const li = document.createElement('li'); li.append(t + ' ');
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Borrar';
+    b.addEventListener('click', () => { borrar(); guardarExtras(extras); todo(); });
+    li.append(b); return li;
+  }));
+}
+
+function graficos() {
+  linea(document.getElementById('ch-evolucion'), 'importe', escala === 'log', '--accent');
+  linea(document.getElementById('ch-real'), 'hoy', false, '--accent2');
+  barras(document.getElementById('ch-anual'));
+}
+function todo() { D = calcular(); texto(); graficos(); tabla(); listaExtras(); }
+
+document.querySelectorAll('[data-escala]').forEach((b) => b.addEventListener('click', () => {
+  escala = b.dataset.escala;
+  document.querySelectorAll('[data-escala]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  linea(document.getElementById('ch-evolucion'), 'importe', escala === 'log', '--accent');
+}));
+document.querySelectorAll('[data-modo]').forEach((b) => b.addEventListener('click', () => {
+  modo = b.dataset.modo;
+  document.querySelectorAll('[data-modo]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  barras(document.getElementById('ch-anual'));
+}));
+document.querySelectorAll('th button').forEach((b) => b.addEventListener('click', () => {
+  orden = orden.col === b.dataset.col ? { col: orden.col, dir: orden.dir === 'asc' ? 'desc' : 'asc' } : { col: b.dataset.col, dir: 'desc' };
+  document.querySelectorAll('th').forEach((th) => {
+    const c = th.querySelector('button').dataset.col;
+    if (c === orden.col) th.setAttribute('aria-sort', orden.dir === 'asc' ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort');
+  });
+  tabla();
+}));
+document.getElementById('buscar').addEventListener('input', (e) => { busca = e.target.value.trim().toLowerCase(); tabla(); });
+
+const numero = (s) => { const n = Number(String(s).trim().replace(/\$|\s/g, '').replace(/\./g, '').replace(',', '.')); return isFinite(n) ? n : NaN; };
+const msg = (t, ok) => { const m = document.getElementById('msg'); m.textContent = t; m.className = 'msg ' + (ok ? 'okm' : 'err'); };
+document.getElementById('f-cuota').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const c = Number(document.getElementById('c-num').value), f = document.getElementById('c-fecha').value;
+  const i = numero(document.getElementById('c-imp').value), prox = document.getElementById('c-prox').value;
+  if (!c || !f || !(i > 0)) { msg('Revisá el número de cuota, la fecha y el importe (por ejemplo 1.025.300,50).'); return; }
+  extras.cuotas = extras.cuotas.filter((x) => x[0] !== c).concat([[c, f, i]]);
+  if (prox) extras.proximo = prox;
+  const ok = guardarExtras(extras);
+  todo(); e.target.reset();
+  msg(ok ? `Cuota ${c} agregada.` : `Cuota ${c} agregada, pero este navegador no la pudo guardar: se va a perder al cerrar.`, ok);
+});
+document.getElementById('f-ipc').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const m = document.getElementById('i-mes').value, v = numero(document.getElementById('i-pct').value);
+  if (!m || !isFinite(v)) { msg('Revisá el mes y el porcentaje (por ejemplo 2,1).'); return; }
+  extras.ipc = extras.ipc.filter((x) => x[0] !== m).concat([[m, v]]);
+  const ok = guardarExtras(extras);
+  todo(); e.target.reset();
+  msg(ok ? `Inflación de ${mesLargo(m)} agregada.` : 'Agregada, pero este navegador no la pudo guardar: se va a perder al cerrar.', ok);
+});
+
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(graficos, 150); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', graficos);
+todo();
+if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
